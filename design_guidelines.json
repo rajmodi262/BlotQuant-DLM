@@ -1,0 +1,153 @@
+{
+  "theme": "light",
+  "archetype": "4 (Swiss & High-Contrast - Adapted for Academic SaaS)",
+  "brand_identity": {
+    "name": "BlotQuant",
+    "description": "Western Blot Band Quantifier — An End-to-End, Hardware-Agnostic Deep Learning Pipeline for Reproducible Protein Expression Analysis.",
+    "tone": [
+      "Scientific",
+      "Authoritative",
+      "Precise",
+      "Objective",
+      "Minimalist"
+    ]
+  },
+  "typography": {
+    "font_families": {
+      "heading": "IBM Plex Sans, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "IBM Plex Mono, monospace"
+    },
+    "scales": {
+      "h1": "text-4xl md:text-5xl tracking-tight font-semibold text-slate-900",
+      "h2": "text-2xl md:text-3xl tracking-tight font-medium text-slate-900",
+      "h3": "text-lg md:text-xl font-medium text-slate-900",
+      "body": "text-base leading-relaxed text-slate-700",
+      "small": "text-sm text-slate-500",
+      "mono_data": "text-sm font-mono tracking-tight text-slate-900",
+      "overline": "text-xs font-bold uppercase tracking-[0.2em] text-slate-500"
+    }
+  },
+  "colors": {
+    "primary": {
+      "DEFAULT": "#0F52BA",
+      "foreground": "#FFFFFF",
+      "hover": "#0C4296",
+      "muted": "#EFF4FF"
+    },
+    "background": "#FFFFFF",
+    "surface": "#FFFFFF",
+    "surface_muted": "#F8FAFC",
+    "border": "#E2E8F0",
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#64748B",
+      "muted": "#94A3B8"
+    },
+    "semantic": {
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#3B82F6"
+    }
+  },
+  "spacing_and_layout": {
+    "container": "max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8",
+    "section_gap": "gap-8 lg:gap-12",
+    "widget_padding": "p-6 lg:p-8",
+    "grid_strategy": "The 'Control Room' Grid (Dashboard)",
+    "rules": [
+      "Use strict grid hierarchy (grid-cols-1 md:grid-cols-3 lg:grid-cols-4) with tight gaps (gap-4 or gap-6).",
+      "Containers must have 1px solid border (#E2E8F0) and NO soft shadows to maintain a flat, authoritative scientific look.",
+      "Data tables and quantitative values MUST use IBM Plex Mono.",
+      "Optical alignment over geometrical alignment.",
+      "Ensure text contrast meets APCA/WCAG standards."
+    ]
+  },
+  "surfaces": {
+    "cards": "bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200",
+    "header": "bg-white/90 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-50",
+    "inputs": "bg-slate-50 border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary rounded-md text-sm",
+    "modals": "bg-white border border-slate-200 shadow-2xl rounded-xl"
+  },
+  "interactions_and_motion": {
+    "hover_states": "Subtle border color darkening and background tinting. Text colors must be explicitly defined on hover.",
+    "focus_states": "High contrast focus rings (ring-2 ring-primary ring-offset-2).",
+    "transitions": "transition-all duration-200 ease-in-out",
+    "loading": "Use clear, scientific progress bars or minimal circular spinners. Avoid bouncing animations."
+  },
+  "components": {
+    "ImageUploadZone": {
+      "style": "Border dashed border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-primary transition-colors flex flex-col items-center justify-center p-12 rounded-lg cursor-pointer",
+      "typography": "Body text for instructions, overline for file limits.",
+      "icon": "Use a crisp Upload icon from Phosphor Icons."
+    },
+    "BandDetectionOverlay": {
+      "style": "Position relative. The uploaded Western blot image is the background. Detected bands have absolute positioned bounding boxes.",
+      "bounding_box": "border-2 border-[#38BDF8] bg-[#38BDF8]/10 rounded-sm hover:bg-[#38BDF8]/20 transition-colors"
+    },
+    "IntensityBarChart": {
+      "library": "recharts",
+      "style": "Minimal styling. Bars colored #0F52BA. Show error bars to represent uncertainty quantification. Hide standard grid lines, use only bottom axis."
+    },
+    "NormalizationStrategyCard": {
+      "style": "Flat card, 1px border. Use grid for key-value pairs. Values in IBM Plex Mono."
+    },
+    "UncertaintyQuantificationTable": {
+      "style": "Dense data table, text-sm, border-b border-slate-200 on rows. Headers in text-xs font-bold text-slate-500 uppercase."
+    },
+    "AuthenticityScoreGauge": {
+      "style": "Horizontal progress bar or semi-circle gauge. Colors map to score (e.g., >90% Green, <70% Orange/Red)."
+    },
+    "ResultsJSONExport": {
+      "style": "bg-slate-900 text-slate-50 p-4 rounded-md font-mono text-sm overflow-x-auto relative",
+      "copy_button": "absolute top-2 right-2 text-slate-400 hover:text-white"
+    },
+    "PipelineVisualization": {
+      "style": "Flowchart-like horizontal layout with arrows connecting steps (Upload -> Detect -> Quantify -> Output)."
+    },
+    "SampleGallery": {
+      "style": "Grid of thumbnail images. 1px border. On click, loads into the upload zone."
+    }
+  },
+  "media": {
+    "images": [
+      {
+        "slug": "science_hero_bg",
+        "url": "https://static.prod-images.emergentagent.com/jobs/6c3bd30b-d667-4260-b18d-eee2caba5bb6/images/0b5ff66ee7b2778b45c22936443b076ad3e91780a1e722ce9e457c1961ec9d3f.png",
+        "description": "Abstract scientific background for hero section or empty states.",
+        "category": "background",
+        "usage": "Use as a very low-opacity background behind the main hero heading or app container."
+      },
+      {
+        "slug": "western_blot_sample",
+        "url": "https://static.prod-images.emergentagent.com/jobs/6c3bd30b-d667-4260-b18d-eee2caba5bb6/images/5cd65e0cefbfb6570c1da778a823055f01c6a33dcd3e29b7643bfac9f93a2e43.png",
+        "description": "Sample Western blot image for the gallery or default state.",
+        "category": "sample_data",
+        "usage": "Use in the Sample Gallery component or as the default placeholder in the Band Detection area."
+      },
+      {
+        "slug": "unsplash_western_blot_placeholder",
+        "url": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&q=80&w=1000",
+        "description": "Laboratory context image.",
+        "category": "context",
+        "usage": "Secondary sample or decorative context."
+      }
+    ],
+    "icons_library": "@phosphor-icons/react"
+  },
+  "accessibility": {
+    "contrast": "Ensure all text against backgrounds meets a minimum 4.5:1 ratio (WCAG AA).",
+    "focus": "All interactive elements must have visible focus rings.",
+    "testing_attributes": "All interactive elements MUST include data-testid attribute in kebab-case format."
+  },
+  "instructions_to_main_agent": [
+    "Install dependencies: react-router-dom, framer-motion, recharts, @phosphor-icons/react, clsx, tailwind-merge.",
+    "Use standard Tailwind classes, do not introduce new CSS files unless necessary.",
+    "Build a Dashboard layout: Top fixed header with logo and primary actions. Main content area uses a bento-style or strict grid layout.",
+    "The primary flow is Image Upload -> Show Loading State -> Render Dashboard with Analysis Results.",
+    "Implement the Band Detection Overlay strictly using relative positioning on the image and absolute positioned divs for the bounding boxes.",
+    "The UI must feel like a professional, scientific lab tool—not a flashy consumer app. Avoid heavy shadows and large border-radii. Stick to 1px borders and rounded-md or rounded-lg.",
+    "Use mock JSON data for the analysis results to populate the UI (e.g., bands with intensity, molecular weight, uncertainty, normalization factors)."
+  ]
+}

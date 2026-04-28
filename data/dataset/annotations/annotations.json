@@ -1,0 +1,254 @@
+[
+  {
+    "image_id": "sample-001",
+    "filename": "sample-001.png",
+    "source": "generated",
+    "description": "Multi-lane western blot with protein markers at 10, 15, 25, 35 kDa",
+    "annotations": {
+      "bands": [
+        {
+          "id": 1,
+          "lane": 1,
+          "position_y_pct": 75,
+          "position_x_pct": 25,
+          "width_pct": 12,
+          "height_pct": 4,
+          "molecular_weight_kda": 15,
+          "label": "Band 1"
+        },
+        {
+          "id": 2,
+          "lane": 1,
+          "position_y_pct": 55,
+          "position_x_pct": 25,
+          "width_pct": 12,
+          "height_pct": 4,
+          "molecular_weight_kda": 25,
+          "label": "Band 2"
+        },
+        {
+          "id": 3,
+          "lane": 2,
+          "position_y_pct": 75,
+          "position_x_pct": 40,
+          "width_pct": 12,
+          "height_pct": 4,
+          "molecular_weight_kda": 15,
+          "label": "Band 3"
+        },
+        {
+          "id": 4,
+          "lane": 2,
+          "position_y_pct": 55,
+          "position_x_pct": 40,
+          "width_pct": 12,
+          "height_pct": 4,
+          "molecular_weight_kda": 25,
+          "label": "Band 4"
+        },
+        {
+          "id": 5,
+          "lane": 3,
+          "position_y_pct": 38,
+          "position_x_pct": 55,
+          "width_pct": 12,
+          "height_pct": 5,
+          "molecular_weight_kda": 35,
+          "label": "Band 5"
+        },
+        {
+          "id": 6,
+          "lane": 3,
+          "position_y_pct": 60,
+          "position_x_pct": 55,
+          "width_pct": 12,
+          "height_pct": 4,
+          "molecular_weight_kda": 20,
+          "label": "Band 6"
+        }
+      ],
+      "lanes": [
+        {
+          "id": 1,
+          "label": "L1",
+          "position_x_pct": 25
+        },
+        {
+          "id": 2,
+          "label": "L2",
+          "position_x_pct": 40
+        },
+        {
+          "id": 3,
+          "label": "L3",
+          "position_x_pct": 55
+        },
+        {
+          "id": 4,
+          "label": "L4",
+          "position_x_pct": 70
+        },
+        {
+          "id": 5,
+          "label": "L5",
+          "position_x_pct": 85
+        }
+      ],
+      "quality": {
+        "overall": "good",
+        "exposure": "normal",
+        "artifacts": "none"
+      }
+    }
+  },
+  {
+    "image_id": "sample-004",
+    "filename": "sample-004.png",
+    "source": "generated",
+    "description": "High-quality 5-lane western blot with MW markers 10-250 kDa",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "good",
+        "exposure": "normal",
+        "artifacts": "none"
+      }
+    }
+  },
+  {
+    "image_id": "sample-005",
+    "filename": "sample-005.png",
+    "source": "generated",
+    "description": "Overexposed 3-lane western blot with saturated merging bands",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "poor",
+        "exposure": "over",
+        "artifacts": "saturation"
+      }
+    }
+  },
+  {
+    "image_id": "sample-006",
+    "filename": "sample-006.png",
+    "source": "generated",
+    "description": "Underexposed 4-lane western blot with faint barely visible bands",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "poor",
+        "exposure": "under",
+        "artifacts": "low_signal"
+      }
+    }
+  },
+  {
+    "image_id": "sample-007",
+    "filename": "sample-007.png",
+    "source": "generated",
+    "description": "Coomassie-stained SDS-PAGE gel with 8 lanes and full MW range",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "good",
+        "exposure": "normal",
+        "artifacts": "none"
+      }
+    }
+  },
+  {
+    "image_id": "sample-008",
+    "filename": "sample-008.png",
+    "source": "generated",
+    "description": "Clean single-band beta-actin western blot across 6 lanes",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "excellent",
+        "exposure": "normal",
+        "artifacts": "none"
+      }
+    }
+  },
+  {
+    "image_id": "sample-009",
+    "filename": "sample-009.png",
+    "source": "generated",
+    "description": "Western blot with smearing artifacts and uneven background staining",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "poor",
+        "exposure": "normal",
+        "artifacts": "smearing"
+      }
+    }
+  },
+  {
+    "image_id": "sample-010",
+    "filename": "sample-010.png",
+    "source": "generated",
+    "description": "High molecular weight western blot with bands above 100 kDa",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "good",
+        "exposure": "normal",
+        "artifacts": "none"
+      }
+    }
+  },
+  {
+    "image_id": "sample-011",
+    "filename": "sample-011.png",
+    "source": "generated",
+    "description": "Dot blot membrane with 4x6 grid of protein dots varying intensity",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "good",
+        "exposure": "normal",
+        "artifacts": "none"
+      }
+    }
+  },
+  {
+    "image_id": "sample-012",
+    "filename": "sample-012.png",
+    "source": "generated",
+    "description": "Serial dilution western blot showing gradient protein loading",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "good",
+        "exposure": "normal",
+        "artifacts": "none"
+      }
+    }
+  },
+  {
+    "image_id": "sample-013",
+    "filename": "sample-013.png",
+    "source": "generated",
+    "description": "Multiplex fluorescent western blot with dual-color detection",
+    "annotations": {
+      "bands": [],
+      "lanes": [],
+      "quality": {
+        "overall": "excellent",
+        "exposure": "normal",
+        "artifacts": "none"
+      }
+    }
+  }
+]

@@ -1,0 +1,12 @@
+image_id,filename,source,num_bands,num_lanes,quality,exposure,has_markers,description
+sample-001,sample-001.png,generated,6,5,good,normal,true,Multi-lane western blot with protein markers at 10-35 kDa range
+sample-004,sample-004.png,generated,18,5,good,normal,true,High-quality 5-lane western blot with MW markers 10-250 kDa
+sample-005,sample-005.png,generated,9,3,poor,over,true,Overexposed 3-lane western blot with saturated merging bands
+sample-006,sample-006.png,generated,8,4,poor,under,true,Underexposed 4-lane western blot with faint barely visible bands
+sample-007,sample-007.png,generated,32,8,good,normal,true,Coomassie-stained SDS-PAGE gel with 8 lanes and full MW range
+sample-008,sample-008.png,generated,6,6,excellent,normal,true,Clean single-band beta-actin western blot across 6 lanes
+sample-009,sample-009.png,generated,10,4,poor,normal,true,Western blot with smearing artifacts and uneven background staining
+sample-010,sample-010.png,generated,8,3,good,normal,true,High molecular weight western blot with bands above 100 kDa
+sample-011,sample-011.png,generated,24,6,good,normal,false,Dot blot membrane with 4x6 grid of protein dots varying intensity
+sample-012,sample-012.png,generated,14,7,good,normal,true,Serial dilution western blot showing gradient protein loading
+sample-013,sample-013.png,generated,20,5,excellent,normal,true,Multiplex fluorescent western blot with dual-color detection
