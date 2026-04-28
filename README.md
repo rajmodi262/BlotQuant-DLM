@@ -1,7 +1,5 @@
 <div align="center">
-  <img src="frontend/public/assets/logo.png" alt="BlotQuant DLM" width="120" style="border-radius: 20px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);" />
-  <br/>
-  <h1 align="center">BlotQuant DLM v3.0</h1>
+  <h1 align="center">🧬 BlotQuant DLM v3.0</h1>
   <p align="center">
     <strong>An end-to-end, hardware-agnostic deep learning pipeline for reproducible protein expression analysis.</strong>
   </p>
