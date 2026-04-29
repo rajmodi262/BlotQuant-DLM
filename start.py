@@ -65,7 +65,7 @@ def start_servers():
         
     # Start Frontend
     frontend = subprocess.Popen(
-        ["npx", "vite", "--host", "--port", "5173"],
+        ["npx", "vite", "--host", "--port", "5174"],
         cwd=ROOT_DIR / "frontend",
         shell=(os.name == 'nt')  # Windows needs shell=True for npx
     )
@@ -80,12 +80,12 @@ def main():
     print("\n" + "="*50)
     print("  🚀 READY! Opening browser...")
     print(f"  Backend:  http://localhost:{BACKEND_PORT}")
-    print(f"  Frontend: http://localhost:5173")
+    print(f"  Frontend: http://localhost:5174")
     print("  Press Ctrl+C to stop all servers.")
     print("="*50 + "\n")
     
     time.sleep(3)
-    webbrowser.open("http://localhost:5173")
+    webbrowser.open("http://localhost:5174")
     
     try:
         backend.wait()

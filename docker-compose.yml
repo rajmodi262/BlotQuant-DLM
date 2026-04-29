@@ -7,7 +7,7 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - CORS_ORIGINS=http://localhost:5173
+      - CORS_ORIGINS=http://localhost:5174
     volumes:
       - ./data:/app/data
       - ./ml_pipeline:/app/ml_pipeline
@@ -17,6 +17,6 @@ services:
     build: ./frontend
     container_name: blotquant-ui
     ports:
-      - "5173:80"
+      - "5174:80"
     depends_on:
       - backend

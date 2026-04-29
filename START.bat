@@ -76,7 +76,7 @@ echo.
 echo [5/5] Starting BlotQuant...
 echo.
 echo  Backend:  http://localhost:8001
-echo  Frontend: http://localhost:5173
+echo  Frontend: http://localhost:5174
 echo.
 echo  ====================================================
 echo    READY! Opening browser in 5 seconds...
@@ -91,13 +91,13 @@ start "BlotQuant Backend" /min cmd /c "cd /d "%~dp0" && python -m uvicorn backen
 timeout /t 3 /nobreak >nul
 
 :: Start frontend in background
-start "BlotQuant Frontend" /min cmd /c "cd /d "%~dp0\frontend" && npx vite --host --port 5173"
+start "BlotQuant Frontend" /min cmd /c "cd /d "%~dp0\frontend" && npx vite --host --port 5174"
 
 :: Wait for frontend to boot
 timeout /t 4 /nobreak >nul
 
 :: Open browser
-start http://localhost:5173
+start http://localhost:5174
 
 echo  Servers are running. Close this window to stop everything.
 echo.
