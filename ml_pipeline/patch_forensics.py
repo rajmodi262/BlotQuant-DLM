@@ -16,12 +16,17 @@ import cv2
 import numpy as np
 import logging
 from typing import Dict, Any, List, Tuple
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 _TORCH_AVAILABLE = False
 _eff_model = None
 _eff_transform = None
+_patch_classifier = None
+_classifier_loaded = False
+
+WEIGHTS_DIR = Path(__file__).parent / "weights"
 
 try:
     import torch
@@ -65,27 +70,63 @@ def _load_efficientnet():
     return _eff_model, _eff_transform
 
 
+def _load_patch_classifier():
+    """Load the trained binary patch classifier if available."""
+    global _patch_classifier, _classifier_loaded
+    if _classifier_loaded:
+        return _patch_classifier
+
+    _classifier_loaded = True
+    weights_path = WEIGHTS_DIR / "patch_classifier.pth"
+
+    if not weights_path.exists() or not _TORCH_AVAILABLE:
+        logger.warning("Trained patch classifier not found. Using heuristic fallback.")
+        _patch_classifier = None
+        return None
+
+    classifier = nn.Sequential(
+        nn.Linear(1280, 256),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(256, 64),
+        nn.ReLU(),
+        nn.Linear(64, 1),
+        nn.Sigmoid(),
+    )
+    state_dict = torch.load(str(weights_path), map_location="cpu", weights_only=True)
+    classifier.load_state_dict(state_dict)
+    classifier.eval()
+    _patch_classifier = classifier
+    logger.info("✓ Trained patch classifier loaded")
+    return _patch_classifier
+
+
 def _compute_patch_score(features: np.ndarray) -> float:
     """
-    Score a single patch for anomaly indicators using feature statistics.
+    Score a single patch for anomaly indicators.
     
-    Anomalous patches (manipulated regions) typically show:
-    - Unusual activation patterns vs natural image statistics
-    - Lower entropy (simpler/synthetic texture)
-    - Extreme sparsity (over- or under-activated)
+    Uses the trained binary classifier if available, otherwise
+    falls back to feature statistics heuristics.
     """
+    classifier = _load_patch_classifier()
+
+    if classifier is not None:
+        # ✅ TRAINED CLASSIFIER — domain-specific anomaly detection
+        feat_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
+        with torch.no_grad():
+            score = classifier(feat_tensor).item()
+        return round(score, 3)
+
+    # Fallback: heuristic feature statistics
     l2 = float(np.linalg.norm(features))
     sparsity = float(np.mean(features > 0))
-    std = float(np.std(features))
     
     # Feature entropy
     hist, _ = np.histogram(features, bins=30, density=True)
     hist = hist[hist > 0]
     entropy = float(-np.sum(hist * np.log2(hist + 1e-10)))
     
-    # Anomaly score: deviation from "natural" statistics
-    # Natural images: moderate L2, balanced sparsity (~0.5), moderate entropy
-    norm_dev = abs(l2 - 15.0) / 15.0  # deviation from typical L2
+    norm_dev = abs(l2 - 15.0) / 15.0
     sparsity_dev = abs(sparsity - 0.5) * 2
     entropy_dev = max(0, 1.0 - entropy / 6.0)
     

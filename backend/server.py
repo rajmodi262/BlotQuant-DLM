@@ -147,9 +147,10 @@ async def analyze_blot(file: UploadFile = File(...)):
     with open(filepath, "wb") as f:
         f.write(contents)
 
-    # Run the real ML pipeline
+    # Run the real ML pipeline (async — doesn't block event loop)
     try:
-        results = run_full_analysis(contents)
+        import asyncio
+        results = await asyncio.to_thread(run_full_analysis, contents)
     except Exception as e:
         logger.error(f"ML pipeline failed: {e}", exc_info=True)
         raise HTTPException(500, f"Analysis failed: {str(e)}")
@@ -203,7 +204,8 @@ async def analyze_sample(sample_id: str):
         f.write(contents)
 
     try:
-        results = run_full_analysis(contents)
+        import asyncio
+        results = await asyncio.to_thread(run_full_analysis, contents)
     except Exception as e:
         logger.error(f"ML pipeline failed: {e}", exc_info=True)
         raise HTTPException(500, f"Analysis failed: {str(e)}")

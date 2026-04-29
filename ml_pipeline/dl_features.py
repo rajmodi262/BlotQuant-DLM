@@ -1,12 +1,12 @@
 """
-BlotQuant Deep Learning Feature Extractor
-Uses pretrained ResNet18 as a fixed feature extractor for transfer learning.
+BlotQuant Deep Learning Feature Extractor (v4.0 — Fine-Tuned)
 
-This is real, citable deep learning:
-  - ResNet18 pretrained on ImageNet (1.2M images, 1000 classes)
-  - Frozen weights — used as a feature extractor (no training needed)
-  - Outputs a 512-dimensional feature vector per image/ROI
-  - Features encode texture, edges, contrast, and structure at multiple scales
+Uses ResNet18 fine-tuned on Western blot quality data for domain-specific
+quality assessment. Falls back to frozen ImageNet if fine-tuned weights
+are not available.
+
+Training: Run `python -m ml_pipeline.train` to generate weights.
+Weights:  ml_pipeline/weights/resnet18_blot_quality.pth
 
 Reference: He et al., "Deep Residual Learning for Image Recognition", CVPR 2016
 """
@@ -22,7 +22,11 @@ logger = logging.getLogger(__name__)
 # Try importing PyTorch — graceful fallback if not available
 _TORCH_AVAILABLE = False
 _model = None
+_quality_model = None
 _transform = None
+_is_finetuned = False
+
+WEIGHTS_DIR = Path(__file__).parent / "weights"
 
 try:
     import torch
@@ -34,32 +38,52 @@ except ImportError:
     logger.warning("PyTorch not installed — DL features will use fallback mode")
 
 
+def _build_quality_head():
+    """Build the quality regression head (must match train.py architecture)."""
+    return nn.Sequential(
+        nn.Linear(512, 128),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(128, 1),
+        nn.Sigmoid(),
+    )
+
+
 def _load_model():
-    """Load and cache the ResNet18 feature extractor (lazy initialization)."""
-    global _model, _transform
+    """Load the feature extractor model (fine-tuned or frozen)."""
+    global _model, _transform, _is_finetuned
     if _model is not None:
         return _model, _transform
 
     if not _TORCH_AVAILABLE:
         return None, None
 
-    logger.info("Loading ResNet18 pretrained model...")
-    
-    # Load pretrained ResNet18
-    weights = models.ResNet18_Weights.IMAGENET1K_V1
-    model = models.resnet18(weights=weights)
-    
-    # Remove the classification head — keep only the feature extractor
-    # This outputs a 512-dimensional feature vector
-    model.fc = nn.Identity()
-    
-    # Freeze all weights — we're using it as a fixed feature extractor
+    weights_path = WEIGHTS_DIR / "resnet18_blot_quality.pth"
+
+    if weights_path.exists():
+        # ✅ FINE-TUNED MODEL — trained on actual Western blot data
+        logger.info("Loading FINE-TUNED ResNet18 (blot quality model)...")
+        model = models.resnet18(weights=None)  # Don't load ImageNet weights
+        model.fc = _build_quality_head()
+        
+        state_dict = torch.load(str(weights_path), map_location="cpu", weights_only=True)
+        model.load_state_dict(state_dict)
+        _is_finetuned = True
+        logger.info("✓ Fine-tuned model loaded — domain-specific quality assessment active")
+    else:
+        # Fallback: frozen ImageNet features
+        logger.warning("Fine-tuned weights not found. Using frozen ImageNet ResNet18.")
+        logger.warning(f"  Run `python -m ml_pipeline.train` to generate: {weights_path}")
+        weights = models.ResNet18_Weights.IMAGENET1K_V1
+        model = models.resnet18(weights=weights)
+        model.fc = nn.Identity()
+        _is_finetuned = False
+
     for param in model.parameters():
         param.requires_grad = False
-    
     model.eval()
     _model = model
-    
+
     # Standard ImageNet preprocessing
     _transform = transforms.Compose([
         transforms.ToPILImage(),
@@ -71,9 +95,38 @@ def _load_model():
             std=[0.229, 0.224, 0.225]
         ),
     ])
-    
-    logger.info("ResNet18 loaded successfully (512-dim feature extractor)")
+
     return _model, _transform
+
+
+def _load_feature_extractor():
+    """Load a ResNet18 without the fc head for feature extraction."""
+    global _quality_model
+    if _quality_model is not None:
+        return _quality_model
+
+    if not _TORCH_AVAILABLE:
+        return None
+
+    weights_path = WEIGHTS_DIR / "resnet18_blot_quality.pth"
+
+    if weights_path.exists():
+        model = models.resnet18(weights=None)
+        model.fc = _build_quality_head()
+        state_dict = torch.load(str(weights_path), map_location="cpu", weights_only=True)
+        model.load_state_dict(state_dict)
+        # Remove the fc head to get 512-dim features
+        model.fc = nn.Identity()
+    else:
+        weights = models.ResNet18_Weights.IMAGENET1K_V1
+        model = models.resnet18(weights=weights)
+        model.fc = nn.Identity()
+
+    for param in model.parameters():
+        param.requires_grad = False
+    model.eval()
+    _quality_model = model
+    return _quality_model
 
 
 def extract_features(image_bytes: bytes) -> Optional[np.ndarray]:
@@ -82,7 +135,8 @@ def extract_features(image_bytes: bytes) -> Optional[np.ndarray]:
     
     Returns numpy array of shape (512,) or None if PyTorch is unavailable.
     """
-    model, transform = _load_model()
+    model = _load_feature_extractor()
+    _, transform = _load_model()
     if model is None:
         return None
 
@@ -109,7 +163,8 @@ def extract_roi_features(image_bytes: bytes, bands: List[Dict]) -> List[np.ndarr
     
     Returns list of 512-dim feature vectors, one per band.
     """
-    model, transform = _load_model()
+    model = _load_feature_extractor()
+    _, transform = _load_model()
     if model is None:
         return [None] * len(bands)
 
@@ -150,78 +205,107 @@ def extract_roi_features(image_bytes: bytes, bands: List[Dict]) -> List[np.ndarr
 
 def compute_dl_quality_score(image_bytes: bytes) -> Dict[str, Any]:
     """
-    Compute image quality metrics using ResNet18 feature analysis.
+    Compute image quality score using the fine-tuned ResNet18 model.
     
-    The feature vector statistics reveal:
-    - Feature magnitude (L2 norm) → overall signal strength
-    - Feature sparsity → how many neurons activate strongly
-    - Feature entropy → information richness
-    - Feature std → variability in the representation
+    If fine-tuned weights are available, the model directly predicts a quality
+    score (0-1) trained on labeled Western blot data.
     
-    Returns a quality score (0-1) and detailed metrics.
+    If not, falls back to feature statistics analysis.
     """
-    features = extract_features(image_bytes)
-    
-    if features is None:
-        # Fallback: use OpenCV-based quality estimation
+    model, transform = _load_model()
+
+    if model is None:
         return _fallback_quality_score(image_bytes)
 
-    # Feature statistics
-    l2_norm = float(np.linalg.norm(features))
-    mean_activation = float(np.mean(features))
-    std_activation = float(np.std(features))
-    max_activation = float(np.max(features))
-    sparsity = float(np.mean(features > 0))  # fraction of positive activations (ReLU)
-    
-    # Feature entropy (discretized)
-    hist, _ = np.histogram(features, bins=50, density=True)
-    hist = hist[hist > 0]
-    entropy = float(-np.sum(hist * np.log2(hist + 1e-10)))
-    
-    # Normalize to quality score
-    # High quality images have: moderate L2 norm, high entropy, balanced sparsity
-    norm_score = min(1.0, l2_norm / 25.0)  # typical range 10-30
-    entropy_score = min(1.0, entropy / 8.0)  # typical range 4-8
-    sparsity_score = 1.0 - abs(sparsity - 0.5) * 2  # best around 0.5
-    
-    quality = round((norm_score * 0.3 + entropy_score * 0.4 + sparsity_score * 0.3), 3)
-    quality = max(0.0, min(1.0, quality))
+    arr = np.frombuffer(image_bytes, dtype=np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img is None:
+        return _fallback_quality_score(image_bytes)
 
-    return {
-        "quality_score": quality,
-        "method": "resnet18_feature_analysis",
-        "metrics": {
-            "feature_l2_norm": round(l2_norm, 2),
-            "feature_mean": round(mean_activation, 4),
-            "feature_std": round(std_activation, 4),
-            "feature_max": round(max_activation, 4),
-            "feature_sparsity": round(sparsity, 3),
-            "feature_entropy": round(entropy, 3),
-        },
-        "interpretation": {
-            "signal_strength": "strong" if l2_norm > 20 else "moderate" if l2_norm > 10 else "weak",
-            "information_richness": "high" if entropy > 6 else "moderate" if entropy > 4 else "low",
-            "activation_balance": "balanced" if 0.3 < sparsity < 0.7 else "imbalanced",
-        },
-    }
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    input_tensor = transform(img_rgb).unsqueeze(0)
+
+    with torch.no_grad():
+        output = model(input_tensor)
+
+    if _is_finetuned:
+        # Direct quality prediction from fine-tuned model
+        quality = round(float(output.squeeze().item()), 3)
+        method = "resnet18_finetuned_blot"
+
+        # Also extract features for detailed metrics
+        features = extract_features(image_bytes)
+        if features is not None:
+            l2_norm = float(np.linalg.norm(features))
+            sparsity = float(np.mean(features > 0))
+            hist, _ = np.histogram(features, bins=50, density=True)
+            hist = hist[hist > 0]
+            entropy = float(-np.sum(hist * np.log2(hist + 1e-10)))
+        else:
+            l2_norm, sparsity, entropy = 0, 0, 0
+
+        return {
+            "quality_score": quality,
+            "method": method,
+            "model_type": "fine-tuned on Western blot dataset",
+            "metrics": {
+                "feature_l2_norm": round(l2_norm, 2),
+                "feature_sparsity": round(sparsity, 3),
+                "feature_entropy": round(entropy, 3),
+            },
+            "interpretation": {
+                "signal_strength": "strong" if l2_norm > 20 else "moderate" if l2_norm > 10 else "weak",
+                "information_richness": "high" if entropy > 6 else "moderate" if entropy > 4 else "low",
+                "activation_balance": "balanced" if 0.3 < sparsity < 0.7 else "imbalanced",
+            },
+        }
+    else:
+        # Frozen ImageNet fallback — use feature statistics
+        features = output.squeeze().numpy()
+        l2_norm = float(np.linalg.norm(features))
+        mean_activation = float(np.mean(features))
+        std_activation = float(np.std(features))
+        sparsity = float(np.mean(features > 0))
+        
+        hist, _ = np.histogram(features, bins=50, density=True)
+        hist = hist[hist > 0]
+        entropy = float(-np.sum(hist * np.log2(hist + 1e-10)))
+        
+        norm_score = min(1.0, l2_norm / 25.0)
+        entropy_score = min(1.0, entropy / 8.0)
+        sparsity_score = 1.0 - abs(sparsity - 0.5) * 2
+        
+        quality = round((norm_score * 0.3 + entropy_score * 0.4 + sparsity_score * 0.3), 3)
+        quality = max(0.0, min(1.0, quality))
+
+        return {
+            "quality_score": quality,
+            "method": "resnet18_imagenet_features",
+            "model_type": "frozen ImageNet (not fine-tuned)",
+            "metrics": {
+                "feature_l2_norm": round(l2_norm, 2),
+                "feature_mean": round(mean_activation, 4),
+                "feature_std": round(std_activation, 4),
+                "feature_sparsity": round(sparsity, 3),
+                "feature_entropy": round(entropy, 3),
+            },
+            "interpretation": {
+                "signal_strength": "strong" if l2_norm > 20 else "moderate" if l2_norm > 10 else "weak",
+                "information_richness": "high" if entropy > 6 else "moderate" if entropy > 4 else "low",
+                "activation_balance": "balanced" if 0.3 < sparsity < 0.7 else "imbalanced",
+            },
+        }
 
 
 def compute_band_similarity(roi_features: List[np.ndarray]) -> Dict[str, Any]:
     """
     Compute pairwise cosine similarity between band ROI features.
-    
-    High similarity between bands in different lanes suggests:
-    - Same protein detected across lanes (expected)
-    - Or potential copy-paste manipulation (unexpected)
-    
-    Low similarity suggests different proteins or varying expression.
     """
     valid = [(i, f) for i, f in enumerate(roi_features) if f is not None]
     
     if len(valid) < 2:
         return {"similarity_matrix": [], "avg_similarity": 0.0, "method": "resnet18_cosine"}
 
-    # Compute pairwise cosine similarity
     n = len(valid)
     sim_matrix = []
     similarities = []
@@ -243,12 +327,14 @@ def compute_band_similarity(roi_features: List[np.ndarray]) -> Dict[str, Any]:
     avg_sim = round(float(np.mean(similarities)), 3) if similarities else 0.0
     max_sim = round(float(np.max(similarities)), 3) if similarities else 0.0
 
+    method = "resnet18_finetuned_cosine" if _is_finetuned else "resnet18_cosine"
+
     return {
         "similarity_matrix": sim_matrix,
         "band_indices": [v[0] for v in valid],
         "avg_similarity": avg_sim,
         "max_similarity": max_sim,
-        "method": "resnet18_cosine",
+        "method": method,
         "interpretation": (
             "High cross-band similarity detected — bands may represent the same protein or region"
             if max_sim > 0.95
@@ -282,6 +368,7 @@ def _fallback_quality_score(image_bytes: bytes) -> Dict[str, Any]:
     return {
         "quality_score": quality,
         "method": "opencv_fallback",
+        "model_type": "classical CV (no PyTorch)",
         "metrics": {
             "blur_score": round(blur_score, 3),
             "dynamic_range": round(dynamic_range, 3),

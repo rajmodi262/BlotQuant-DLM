@@ -15,63 +15,36 @@ export default function CombinedReport({ analysis }) {
   useEffect(() => {
     if (!results) return;
 
-    // --- Presentation Safe Adjustments ---
-    // Standardize scores for faculty demo to prevent false positives on clean samples
-    const isCleanSample = image_name?.includes('Multi-lane') || image_name?.includes('PVDF') || image_name?.includes('sample-blot');
-    const isBadSample = image_name?.includes('Overexposed') || image_name?.includes('sample-003');
-
-    let authScore = results.authenticity?.score || 0.85;
-    let dlScore = results.dl_quality?.quality_score || 0.82;
+    // --- v4.0: Use actual pipeline scores — no artificial manipulation ---
+    let authScore = results.authenticity?.score || 0;
+    let dlScore = results.dl_quality?.quality_score || 0;
     let suspCount = results.patch_forensics?.suspicious_count || 0;
     let hasNoise = results.spectral_analysis?.has_periodic_noise || false;
 
-    // Use a simple hash of the image name to generate a varied score boost
-    const nameSeed = image_name ? image_name.charCodeAt(0) + image_name.charCodeAt(image_name.length - 1) + image_name.length : 42;
-    const vary1 = (nameSeed % 7) / 100; // 0.00 to 0.06
-    const vary2 = ((nameSeed * 3) % 8) / 100; // 0.00 to 0.07
-
-    if (isCleanSample && !isBadSample) {
-      authScore = Math.max(authScore, 0.88 + vary1); // Varies between 88% and 94%
-      dlScore = Math.max(dlScore, 0.86 + vary2); // Varies between 86% and 93%
-      suspCount = 0; // Suppress false positives
-      hasNoise = false;
-    } else if (isBadSample) {
-      authScore = Math.min(authScore, 0.52 + vary1);
-      dlScore = Math.min(dlScore, 0.48 + vary2);
-      suspCount = Math.max(suspCount, 18 + (nameSeed % 12)); // Randomly bad
-    }
-
-    // 1. Calculate Composite Score
+    // 1. Calculate Composite Score from real pipeline data
     const snr = results.extended?.snr?.average || 10;
     const snrNorm = Math.min(snr / 15, 1); // 15 is excellent SNR
     
     const sharp = results.extended?.band_sharpness?.average || 100;
     const sharpNorm = Math.min(sharp / 150, 1); // 150 is very sharp
     
-    // Add a tiny variation to loadEven too
-    const loadEvenBase = results.extended?.loading_evenness?.evenness_score || 0.85;
-    const loadEven = isCleanSample && !isBadSample ? Math.max(loadEvenBase, 0.86 + vary1) : loadEvenBase;
+    const loadEven = results.extended?.loading_evenness?.evenness_score || 0.85;
     
     // Forensic Penalty (subtract if suspicious)
     let forensicPenalty = 0;
-    if (suspCount > 0) forensicPenalty += 0.15;
-    if (hasNoise) forensicPenalty += 0.1;
+    if (suspCount > 5) forensicPenalty += 0.10;
+    if (suspCount > 15) forensicPenalty += 0.10;
+    if (hasNoise) forensicPenalty += 0.05;
 
     // Weighted combination
     let composite = (
-      (authScore * 0.35) + 
-      (dlScore * 0.30) + 
-      (snrNorm * 0.15) + 
-      (sharpNorm * 0.10) + 
+      (authScore * 0.30) + 
+      (dlScore * 0.25) + 
+      (snrNorm * 0.20) + 
+      (sharpNorm * 0.15) + 
       (loadEven * 0.10)
     ) - forensicPenalty;
 
-    // Ensure it doesn't just hit exactly 88. 
-    if (isCleanSample && !isBadSample) {
-       // If it's still below a threshold, give it a final varied boost
-       const minTarget = 0.87 + ((nameSeed % 9) / 100); // 0.87 to 0.95
-       composite = Math.max(composite, minTarget); 
-    }
     
     composite = Math.max(0, Math.min(1, composite));
     const score100 = Math.round(composite * 100);

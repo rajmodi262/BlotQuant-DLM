@@ -9,6 +9,7 @@ once a labeled dataset is available.
 """
 
 import cv2
+import math
 import numpy as np
 from typing import List, Dict, Any
 
@@ -69,7 +70,7 @@ def detect_bands(image_bytes: bytes) -> Dict[str, Any]:
         # Bands are typically wider than tall (aspect > 0.5)
         if aspect < 0.3 or aspect > 15:
             continue
-        band_contours.append((x, y, bw, bh, area))
+        band_contours.append((x, y, bw, bh, area, cnt))
 
     # Sort by position: top-to-bottom, then left-to-right
     band_contours.sort(key=lambda b: (b[1], b[0]))
@@ -114,7 +115,7 @@ def detect_bands(image_bytes: bytes) -> Dict[str, Any]:
 
     # --- Assign bands to lanes ---
     bands = []
-    for idx, (x, y, bw, bh, area) in enumerate(band_contours):
+    for idx, (x, y, bw, bh, area, contour) in enumerate(band_contours):
         band_center_x = x + bw / 2
         
         # Find closest lane
@@ -134,13 +135,18 @@ def detect_bands(image_bytes: bytes) -> Dict[str, Any]:
         mean_val = np.mean(roi)
         normalized_intensity = round(1.0 - (mean_val / 255.0), 3)
 
-        # Estimate molecular weight from vertical position (rough linear scale)
-        # Top of gel = high MW, bottom = low MW (typical range ~10-250 kDa)
+        # Estimate molecular weight from vertical position (semi-logarithmic scale)
+        # Real gel electrophoresis: log(MW) is linearly proportional to migration distance
+        # Top of gel = high MW (~250 kDa), bottom = low MW (~10 kDa)
         y_fraction = y / h
-        estimated_mw = int(250 - (y_fraction * 240))
+        log_mw_high = math.log10(250)  # ~2.398
+        log_mw_low = math.log10(10)    # 1.0
+        log_mw = log_mw_high - y_fraction * (log_mw_high - log_mw_low)
+        estimated_mw = int(round(10 ** log_mw))
 
-        # Confidence based on contour properties
-        solidity = area / max(cv2.contourArea(cv2.convexHull(cnt)), 1)
+        # Confidence based on contour properties (using THIS band's contour, not a stale variable)
+        hull_area = cv2.contourArea(cv2.convexHull(contour))
+        solidity = area / max(hull_area, 1)
         confidence = round(min(0.99, max(0.3, solidity * 0.7 + 0.3)), 2)
 
         bands.append({
