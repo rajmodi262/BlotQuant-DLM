@@ -20,29 +20,33 @@ export default function CombinedReport({ analysis }) {
     let dlScore = results.dl_quality?.quality_score || 0;
     let suspCount = results.patch_forensics?.suspicious_count || 0;
     let hasNoise = results.spectral_analysis?.has_periodic_noise || false;
+    const totalPatches = (results.patch_forensics?.grid_size || 8) ** 2;
 
-    // 1. Calculate Composite Score from real pipeline data
+    // 1. Normalize all signals to 0-1 range
     const snr = results.extended?.snr?.average || 10;
-    const snrNorm = Math.min(snr / 15, 1); // 15 is excellent SNR
+    const snrNorm = Math.min(snr / 12, 1); // 12+ is excellent SNR
     
     const sharp = results.extended?.band_sharpness?.average || 100;
-    const sharpNorm = Math.min(sharp / 150, 1); // 150 is very sharp
+    const sharpNorm = Math.min(sharp / 120, 1); // 120+ is sharp
     
     const loadEven = results.extended?.loading_evenness?.evenness_score || 0.85;
     
-    // Forensic Penalty (subtract if suspicious)
-    let forensicPenalty = 0;
-    if (suspCount > 5) forensicPenalty += 0.10;
-    if (suspCount > 15) forensicPenalty += 0.10;
-    if (hasNoise) forensicPenalty += 0.05;
+    const bandCount = results.bands?.length || 0;
+    const bandScore = bandCount > 0 ? Math.min(bandCount / 4, 1.0) : 0.3;
 
-    // Weighted combination
+    // Forensic Penalty — proportional to suspicious ratio, not a cliff
+    const suspRatio = totalPatches > 0 ? suspCount / totalPatches : 0;
+    let forensicPenalty = suspRatio * 0.15; // max 0.15 if ALL patches suspicious
+    if (hasNoise) forensicPenalty += 0.03;
+
+    // Weighted combination — emphasizes measurable image quality signals
     let composite = (
-      (authScore * 0.30) + 
-      (dlScore * 0.25) + 
-      (snrNorm * 0.20) + 
-      (sharpNorm * 0.15) + 
-      (loadEven * 0.10)
+      (authScore * 0.20) + 
+      (dlScore * 0.15) + 
+      (snrNorm * 0.25) + 
+      (sharpNorm * 0.20) + 
+      (loadEven * 0.10) +
+      (bandScore * 0.10)
     ) - forensicPenalty;
 
     
