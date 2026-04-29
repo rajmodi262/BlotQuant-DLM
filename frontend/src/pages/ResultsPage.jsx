@@ -10,6 +10,7 @@ import AuthenticityGauge from "../components/AuthenticityGauge";
 import QualityDashboard from "../components/QualityDashboard";
 import ExtendedFeatures from "../components/ExtendedFeatures";
 import CombinedReport from "../components/CombinedReport";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 import ForensicLens from "../components/ForensicLens";
 import GridScanner from "../components/GridScanner";
@@ -69,8 +70,9 @@ export default function ResultsPage() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative' }}>
-      {/* Video background — machinery */}
+    <ErrorBoundary>
+      <div style={{ minHeight: '100vh', position: 'relative' }}>
+        {/* Video background — machinery */}
       <div className="video-bg-wrapper">
         <video autoPlay muted loop playsInline>
           <source src="/assets/bg-results.mp4" type="video/mp4" />
@@ -241,5 +243,6 @@ export default function ResultsPage() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

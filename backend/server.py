@@ -72,50 +72,55 @@ SAMPLE_IMAGES = [
 
 
 # ============================================================
-# Simple JSON File Database (no MongoDB needed)
+# SQLite Database (Robust, ACID compliant, no race conditions)
 # ============================================================
+import sqlite3
 
-def _load_db() -> list:
-    """Load all analyses from the JSON file."""
-    if not DB_FILE.exists():
-        return []
-    try:
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return []
+DB_FILE = DB_DIR / 'blotquant.db'
 
+def init_db():
+    with sqlite3.connect(str(DB_FILE)) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS analyses (
+                id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                image_name TEXT,
+                image_path TEXT,
+                image_url TEXT,
+                image_mime TEXT,
+                status TEXT,
+                engine TEXT,
+                results TEXT
+            )
+        """)
 
-def _save_db(records: list):
-    """Save all analyses to the JSON file."""
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=2, ensure_ascii=False)
-
+init_db()
 
 def _insert_analysis(doc: dict):
-    """Insert a single analysis record."""
-    records = _load_db()
-    records.insert(0, doc)  # newest first
-    # Keep only the last 100 analyses
-    _save_db(records[:100])
-
+    with sqlite3.connect(str(DB_FILE)) as conn:
+        conn.execute("""
+            INSERT INTO analyses (id, created_at, image_name, image_path, image_url, image_mime, status, engine, results)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            doc["id"], doc["created_at"], doc.get("image_name"), doc.get("image_path"),
+            doc.get("image_url"), doc.get("image_mime"), doc.get("status"), doc.get("engine"),
+            json.dumps(doc.get("results", {}))
+        ))
 
 def _find_analysis(analysis_id: str) -> dict | None:
-    """Find a single analysis by ID."""
-    for rec in _load_db():
-        if rec.get("id") == analysis_id:
-            return rec
-    return None
-
+    with sqlite3.connect(str(DB_FILE)) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT * FROM analyses WHERE id = ?", (analysis_id,)).fetchone()
+        if not row: return None
+        doc = dict(row)
+        doc["results"] = json.loads(doc["results"])
+        return doc
 
 def _list_analyses(limit: int = 50) -> list:
-    """List recent analyses (without image_path for privacy)."""
-    records = _load_db()[:limit]
-    cleaned = []
-    for rec in records:
-        r = {k: v for k, v in rec.items() if k != "image_path"}
-        cleaned.append(r)
-    return cleaned
+    with sqlite3.connect(str(DB_FILE)) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT id, created_at, image_name, image_url, image_mime, status, engine FROM analyses ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+        return [dict(r) for r in rows]
 
 
 # ============================================================
